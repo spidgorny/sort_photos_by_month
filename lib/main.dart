@@ -38,9 +38,9 @@ class FolderEntry {
     rest = 0;
     dir.list().listen((FileSystemEntity f) {
       var mime = lookupMimeType(f.path);
-      if (mime.startsWith('video')) {
+      if (mime?.startsWith('video') ?? false) {
         videos++;
-      } else if (mime.startsWith('image')) {
+      } else if (mime?.startsWith('image') ?? false) {
         photos++;
       } else {
         rest++;
@@ -70,6 +70,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final Directory camera = Directory('/storage/emulated/0/DCIM/Camera');
   List<FolderEntry> dirs = [];
   bool permissionGranted = false;
+  FolderEntry root;
 
   @override
   void initState() {
@@ -99,6 +100,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void readFiles() async {
+    dirs.clear();
+    root = FolderEntry(camera, update: () => setState(() {}));
     Stream<FileSystemEntity> _photoList = camera.list();
     _photoList.listen((FileSystemEntity f) {
       if (f.statSync().type == FileSystemEntityType.directory) {
@@ -116,7 +119,10 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: permissionGranted
-          ? renderListView(context)
+          ? Column(children: [
+              renderHeader(context),
+              Expanded(child: renderListView(context))
+            ])
           : Center(
               child: RaisedButton(
               child: Text('Allow reading camera folder'),
@@ -129,18 +135,37 @@ class _MyHomePageState extends State<MyHomePage> {
             )),
 
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          this.readFiles();
+        },
         tooltip: 'Increment',
-        child: Icon(Icons.add),
+        child: Icon(Icons.refresh),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 
+  Widget renderHeader(BuildContext context) {
+    return ListTile(
+      title: Text(camera.path),
+      leading: Icon(Icons.camera),
+      subtitle: Text('Photos: ${root.photos}, Videos: ${root.videos}'),
+      trailing: RaisedButton(
+        child: Text('Move by month'),
+        onPressed: () {
+          moveFilesByMonth();
+        },
+      ),
+    );
+  }
+
   Widget renderListView(BuildContext context) {
+    dirs.sort((f1, f2) => f2.fileName.compareTo(f1.fileName));
     return dirs.length > 0
         ? ListView(
+            shrinkWrap: true,
             children: dirs.map((f) {
               return ListTile(
+                dense: true,
                 title: Text(f.fileName),
                 trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                   Chip(label: Text(f.photos.toString())),
@@ -151,6 +176,27 @@ class _MyHomePageState extends State<MyHomePage> {
               );
             }).toList(),
           )
-        : Center(child: CircularProgressIndicator());
+        : Center(
+            child: CircularProgressIndicator(),
+          );
+  }
+
+  void moveFilesByMonth() {
+    var dir = Directory(root.folder.path);
+    var files = dir.listSync();
+    for (var f in files) {
+      if (f is File) {
+        var mime = lookupMimeType(f.path);
+        if (mime != null) {
+          if (mime.startsWith('video') || mime.startsWith('image')) {
+            var date = f.statSync().modified;
+            var Ym = date.year.toString() +
+                '-' +
+                date.month.toString().padLeft(2, '0');
+            print([Ym, date, f.path.split('/').last]);
+          }
+        }
+      }
+    }
   }
 }
