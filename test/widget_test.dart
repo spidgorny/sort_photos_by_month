@@ -1,30 +1,40 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility that Flutter provides. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:sort_photos_by_month/main.dart';
+import 'package:sort_photos_by_month/FolderEntry.dart';
+import 'package:sort_photos_by_month/MyHomePage.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('FolderEntry', (WidgetTester tester) async {
+    var f = FolderEntry(Directory('/'), update: () {
+      print('update');
+    });
+    print(f.folder);
+  });
+
+  testWidgets('MyHomePage', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(MyApp());
+    await tester.pumpWidget(
+        MaterialApp(home: MyHomePage(title: 'Sort photos by month')));
+    expect(find.byType(MaterialApp), matchesGoldenFile("MyHomePage1.png"));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    var mhp = find.byType(MyHomePage);
+    var state = tester.state<MyHomePageState>(mhp);
+    print([state, state.permissionGranted, state.dirs]);
+    expect(state.permissionGranted, isFalse);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+//    if (!state.permissionGranted) {
+//      await tester.runAsync(() {
+//        tester.tap(find.byType(RaisedButton));
+//      });
+//      await tester.pumpAndSettle();
+//      expect(find.byType(MaterialApp), matchesGoldenFile("MyHomePage2.png"));
+//    } else {
+//      expect(find.text('Move by month'), findsOneWidget);
+//      await tester.pumpAndSettle();
+//      expect(find.byType(MaterialApp), matchesGoldenFile("MyHomePage3.png"));
+//      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+//    }
   });
 }
