@@ -134,19 +134,23 @@ class MyHomePageState extends State<MyHomePage> {
     var files = dir.listSync();
     for (var f in files) {
       if (f is File) {
+        print(f.path);
         var mime = lookupMimeType(f.path);
         if (mime != null) {
+          print(mime);
           if (mime.startsWith('video') || mime.startsWith('image')) {
             var date = f.statSync().modified;
             var Ym = date.year.toString() +
                 '-' +
                 date.month.toString().padLeft(2, '0');
-            print([Ym, date, f.path.split('/').last]);
+            var fileName = f.path.split('/').last;
+            print([Ym, date, fileName]);
             var subdir = Directory(root.folder.path + '/' + Ym);
             if (!subdir.existsSync()) {
               subdir.createSync();
             }
-            f.renameSync(root.folder.path + '/' + Ym);
+            f.renameSync(root.folder.path + '/' + Ym + '/' + fileName);
+            break;
           }
         }
       }
